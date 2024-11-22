@@ -1,0 +1,381 @@
+---
+title: "Final Project Time Series"
+author: "Elvano Jethro Mogi Pardede and Rasyad Muhammad Ramdhanazuri"
+output: html_notebook
+date: "2024-06-09"
+---
+
+```{r, message = FALSE, warning=FALSE}
+library(readr)
+library(performance)
+library(forecast)
+library(tseries)
+library(lmtest)
+library(nortest)
+library(TTR)
+library(TSA)
+library(car)
+```
+
+# Insert Data
+
+```{r}
+data <- read.csv('[1] Dataset IHSG.csv')
+data$t <- seq(1:nrow(data))
+data
+```
+
+```{r}
+data_ts <- ts(data$ihsg)
+data_ts
+```
+
+# Data Splitting
+
+Train: 90%\
+Test: 10%
+
+```{r}
+n <- nrow(data)
+n_train <- round(nrow(data) * 0.9)
+n_test <- nrow(data) - n_train
+n_test
+n_train
+```
+
+```{r}
+data_train <- data_ts[1:n_train]
+data_train
+```
+
+```{r}
+test_index <- n_train + 1
+data_test <- data_ts[test_index:n]
+data_test
+```
+
+# Double Exponential Smoothing
+
+```{r}
+model_ets <- ets(data_train)
+forecast_ets <- forecast(model_ets, h = n_test)
+summary(model_ets)
+```
+
+```{r}
+model_des <- holt(data_train, h = n_test)
+summary(model_des)
+```
+
+```{r}
+forecast_values <- model_des$mean
+forecast_values
+```
+
+```{r}
+# Calculate Mean Absolute Error (MAE)
+mae_des <- mean(abs(forecast_values - data_test))
+mae_des
+
+# Calculate Mean Squared Error (MSE)
+mse_des <- mean((forecast_values - data_test)^2)
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse_des <- sqrt(mse_des)
+rmse_des
+
+# Calculate Mean Absolute Percentage Error (MAPE)
+mape_des <- mean(abs((data_test - forecast_values) / data_test))
+mape_des
+```
+
+```{r}
+alpha <- model_des$model$par[1]
+beta <- model_des$model$par[2]
+alpha
+beta
+```
+
+# Time Series Regression
+
+```{r}
+data_train_reg <- data.frame(
+  t = seq(1, length(data_train)),
+  ihsg = data_train
+)
+data_train_reg
+```
+
+## Model 1
+
+```{r}
+model1 = lm(ihsg~t, data_train_reg)
+summary(model1)
+```
+
+### Autokorelasi (Uji residual independen)
+
+$$
+\begin{aligned}
+H_0&: \rho\ne0 \text{ (residual independen)}\\
+H_1&: \rho = 0
+\end{aligned}
+$$
+
+```{r}
+library(lmtest)
+dwtest(model1, alternative = "two.sided")
+```
+
+### Homoskedastisitas (Uji residual identik)
+
+H0: residual identik (varians konstan)
+
+h1: residual tidak identik
+
+```{r}
+bptest(model1)
+```
+
+### Uji Residual berdisitribusi normal
+
+residual berdist normal
+
+residual tidak berdist normal h1
+
+```{r}
+er1=residuals(model1)
+library(nortest)
+lillie.test(er1)
+```
+
+### Hitung kriteria kebaikan model dengna RMSE
+
+```{r}
+MSE_lm1 = mean(er1^2)
+RMSE_lm1 = sqrt(MSE_lm1)
+```
+
+## Model 2
+
+```{r}
+data_train_reg$lny = log(data_train_reg$ihsg)
+head(data_train_reg)
+```
+
+```{r}
+data_train_reg$lny = log(data_train_reg$ihsg)
+model2 = lm(lny~t, data_train_reg)
+summary(model2)
+```
+
+```{r}
+yhat = exp(fitted.values(model2))
+yhat
+```
+
+```{r}
+dwtest(model2, alternative = "two.sided")
+```
+
+```{r}
+bptest(model2)
+```
+
+```{r}
+yhat=exp(fitted.values(model2))
+er2=data$ihsg - yhat
+lillie.test(er2)
+```
+
+```{r}
+sqrt(mean(er2^2))
+```
+
+## Model 3
+
+```{r}
+data_train_reg$t2=data_train_reg$t^2
+model3 = lm(ihsg~t+t2, data_train_reg)
+summary(model3)
+```
+
+```{r}
+dwtest(model3, alternative = "two.sided")
+```
+
+```{r}
+bptest(model3)
+```
+
+```{r}
+er3=residuals(model3)
+lillie.test(er3)
+```
+
+```{r}
+sqrt(mean(er3^2))
+```
+
+## Model 4
+
+```{r}
+yt = data_train_reg$ihsg[2:n]
+length(yt)
+```
+
+```{r}
+t=data_train_reg$t[2:n]
+yt1=data_train_reg$ihsg[1:(n-1)]
+head(yt1)
+```
+
+```{r}
+yt = data_train_reg$ihsg[2:n]
+t=data_train_reg$t[2:n]
+yt1=data_train_reg$ihsg[1:(n-1)]
+model4=lm(yt~t+yt1)
+summary(model4)
+```
+
+```{r}
+dwtest(model4, alternative = "two.sided")
+bptest(model4)
+```
+
+```{r}
+er4 = residuals(model4)
+lillie.test(er4)
+```
+
+```{r}
+sqrt(mean(er4^2))
+```
+
+## Model 5
+
+```{r}
+yt=data_train_reg$ihsg[3:n]
+t=data_train_reg$t[3:n]
+yt1=data_train_reg$ihsg[2:(n-1)]
+yt2=data_train_reg$ihsg[1:(n-2)]
+model5 = lm(yt~t+yt1+yt2)
+summary(model5)
+```
+
+## Model 6
+
+```{r}
+model6 = lm(yt ~ t + yt2)
+summary(model6)
+```
+
+```{r}
+dwtest(model6, alternative = "two.sided")
+bptest(model6)
+```
+
+```{r}
+er6 = residuals(model6)
+lillie.test(er6)
+```
+
+Karena yt2 tidak signifikan kita harus kurangi, tetapi karena jika dikurangi jadi model 4, maka yaudah gausah dibuat lagi, kan udah ada di model sebelumnya
+
+YANG LOLOS MODEL 4 AJA
+
+# Neural Network
+
+## Creating the Model
+
+```{r}
+model_nn <- nnetar(data_train, size = 5, p = 1)
+model_nn
+```
+
+## Neural Network Model Evaluation
+
+```{r}
+accuracy(model_nn)
+```
+
+## Model Evaluation using Test Data
+
+```{r}
+yhat <- forecast(model_nn, h = 18)
+err_nn_test <- data_test - yhat$mean
+
+sqrt(mean(err_nn_test^2))
+mean(abs(err_nn_test))
+mean(abs(err_nn_test) / data_test)
+```
+
+# ARIMA
+
+## Uji Signifikansi Variance
+
+```{r}
+summary(powerTransform(data_train))
+```
+
+### Transformasi Data
+
+```{r}
+data_pow <- data_train^2
+data_pow
+```
+
+## Uji Signifikansi Mean
+
+```{r}
+adf.test(data_pow)
+```
+
+### Differencing 1
+
+```{r}
+d1 <- diff(data_pow)
+adf.test(d1)
+
+acf(d1, lag.max = 20)
+pacf(d1, lag.max = 20)
+```
+
+## ARIMA Modeling
+
+```{r}
+model_1 <- arima(d1, order = c(0, 0, 0))
+coeftest(model_1)
+
+model_2 <- arima(d1, order = c(0, 0, 1))
+coeftest(model_2)
+
+model_3 <- arima(d1, order = c(0, 0, 2))
+coeftest(model_3)
+
+model_4 <- arima(d1, order = c(0, 0, 3))
+coeftest(model_4)
+
+model_5 <- arima(d1, order = c(1, 0, 0))
+coeftest(model_5) 
+
+model_6 <- arima(d1, order = c(1, 0, 1))
+coeftest(model_6) # Signifikan
+
+model_7 <- arima(d1, order = c(1, 0, 2))
+coeftest(model_7)
+
+model_8 <- arima(d1, order = c(1, 0, 3))
+coeftest(model_8)
+
+model_auto <- auto.arima(d1)
+coeftest(model_auto)
+```
+
+## Residual Assumption Test
+
+```{r}
+err_6 <- residuals(model_6)
+Box.test(err_6, type = "Ljung-Box")
+lillie.test(err_6)
+```
