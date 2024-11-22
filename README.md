@@ -7,7 +7,6 @@ This repository contains the final project for a time series analysis on the Ind
 - **Dataset IHSG.csv**: This dataset contains historical data of the IHSG, which will be used to build and test prediction models.
 - **Other Prediction Model.Rmd**: This R markdown file contains scripts for analyzing the time series using different approaches. It provides a detailed and reproducible workflow to preprocess the data, train models, and evaluate their performance.
 - **Manual Prediction Model.xlsx**: This Excel file outlines a manual approach to making predictions. It contains various sheets and calculations that help illustrate different prediction techniques step-by-step.
-- **Other Prediction Model.html**: This file is an HTML document generated from the R markdown, offering a comprehensive report of the models used, their assumptions, and the overall findings of the analysis.
 
 ## Analysis Summary
 The analysis focused on the prediction of the IHSG index, a crucial indicator for investors and economists. The methods used in this study included:
