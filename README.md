@@ -33,8 +33,7 @@ The paper concluded that the ARIMA model is a robust tool for predicting the IHS
 ## How to Use This Repository
 1. **Data Exploration**: Start by exploring the dataset (Dataset IHSG.csv) to understand its structure and key variables.
 2. **Run Analysis**: Use `Other Prediction Model.Rmd` to run the analysis and create visualizations. This R markdown file contains all the steps, from data cleaning to model training and evaluation.
-3. **Review Results**: Open `Other Prediction Model.html` to review the results and understand the performance of each predictive model.
-4. **Manual Verification**: Use `Manual Prediction Model.xlsx` to understand the calculations and manually verify the results of the prediction models.
+4. **Traditional Method**: Use `Manual Prediction Model.xlsx` to calculate the time series prediction with traditional method.
 
 ## Dependencies
 - R with the following libraries: **forecast**, **ggplot2**, **tseries**, and **dplyr**.
